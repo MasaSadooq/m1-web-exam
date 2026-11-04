@@ -29,9 +29,12 @@ export class CustomersService {
     private readonly repository: CustomersRepository,
   ) {}
 
-  findAll(): Promise<CustomerModel[]> {
-    return this.repository.findAll();
-  }
+  findAll(
+  page: number,
+  limit: number,
+): Promise<{ totalCount: number; customers: CustomerModel[] }> {
+  return this.repository.findAll(page, limit);
+}
 
   async findById(id: string): Promise<CustomerModel> {
     const customer = await this.repository.findById(id);

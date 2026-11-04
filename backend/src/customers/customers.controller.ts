@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from "@nestjs/common";
 import { CustomersService } from "./customers.service";
 import {
@@ -30,11 +32,37 @@ export class CustomersController {
     @Inject(CustomersService) private readonly service: CustomersService,
   ) {}
 
-  @Get()
-  async findAll(): Promise<CustomerResponseDto[]> {
-    return (await this.service.findAll()).map((model) =>
-      CustomerResponseDto.fromModel(model),
-    );
+    @Get()
+  async findAll(
+    @Query("page") pageQuery?: string,
+    @Query("limit") limitQuery?: string,
+  ): Promise<{ totalCount: number; customers: CustomerResponseDto[] }> {
+    const pageValue = pageQuery ?? "1";
+    const limitValue = limitQuery ?? "10";
+
+    if (!/^[1-9]\d*$/.test(pageValue)) {
+      throw new BadRequestException("page must be a positive integer");
+    }
+
+    if (!/^[1-9]\d*$/.test(limitValue)) {
+      throw new BadRequestException("limit must be a positive integer");
+    }
+
+    const page = Number(pageValue);
+    const limit = Number(limitValue);
+
+    if (limit > 50) {
+      throw new BadRequestException("limit cannot be greater than 50");
+    }
+
+    const result = await this.service.findAll(page, limit);
+
+    return {
+      totalCount: result.totalCount,
+      customers: result.customers.map((model) =>
+        CustomerResponseDto.fromModel(model),
+      ),
+    };
   }
 
   @Post()
